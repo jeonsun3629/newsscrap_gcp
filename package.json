@@ -1,0 +1,37 @@
+{
+  "name": "news-crawler",
+  "version": "1.0.0",
+  "description": "뉴스 크롤링 요약 자동화 파이프라인",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "news",
+    "crawler",
+    "gpt",
+    "notion",
+    "automation"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@smithery/cli": "^1.0.0",
+    "@notionhq/client": "^2.2.14",
+    "axios": "^1.6.2",
+    "cheerio": "^1.0.0-rc.12",
+    "dotenv": "^16.3.1",
+    "openai": "^4.28.0",
+    "express": "^4.18.2",
+    "winston": "^3.11.0",
+    "node-fetch": "^2.6.7"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+} 
