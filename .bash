@@ -11,7 +11,7 @@ gcloud run deploy news-crawler \
   --image gcr.io/newsscrap-456408/news-crawler:latest \
   --platform managed \
   --region asia-northeast3 \
-  --update-secrets=OPENAI_API_KEY=projects/newsscrap-456408/secrets/OPENAI_API_KEY:latest,NOTION_TOKEN=projects/newsscrap-456408/secrets/NOTION_TOKEN:latest \
+  --update-secrets=OPENAI_API_KEY=projects/newsscrap-456408/secrets/OPENAI_API_KEY:latest,NOTION_TOKEN=projects/newsscrap-456408/secrets/NOTION_TOKEN:latest,FIRECRAWL_API_KEY=projects/newsscrap-456408/secrets/FIRECRAWL_API_KEY:latest \
   --allow-unauthenticated
 
 gcloud run services describe news-crawler --region asia-northeast3 --format="value(status.url)"
