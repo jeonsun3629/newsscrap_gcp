@@ -39,7 +39,7 @@ app.get('/', async (req, res) => {
 });
 
 // 서버 시작
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   logger.info(`서버가 포트 ${PORT}에서 실행 중입니다.`);
   logger.info(`환경: ${process.env.NODE_ENV || 'production'}`);
   logger.info(`매일 ${config.crawler.randomCountries}개 국가의 뉴스 사이트를 크롤링합니다.`);

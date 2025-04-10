@@ -25,7 +25,7 @@ gcloud run services add-iam-policy-binding news-crawler \
 
 # Cloud Scheduler 작업 생성 (매일 오전 7시 실행)
 gcloud scheduler jobs create http daily-news-crawl \
-  --schedule="0 7 * * *" \
+  --schedule="0 8* * *" \
   --uri="YOUR_CLOUD_RUN_URL" \
   --http-method=GET \
   --oidc-service-account-email=753507636298-compute@developer.gserviceaccount.com \
