@@ -8,11 +8,13 @@ gcloud services enable cloudscheduler.googleapis.com
 
 # 현재 디렉토리에서 Cloud Run으로 배포
 gcloud run deploy news-crawler \
-  --source . \
+  --image gcr.io/newsscrap-456408/news-crawler:latest \
   --platform managed \
   --region asia-northeast3 \
   --env-vars-file .env.yaml \
-  --allow-unauthenticated
+  --allow-unauthenticated \
+  --timeout=300s
+
 
 gcloud run services describe news-crawler --region asia-northeast3 --format="value(status.url)"
 
