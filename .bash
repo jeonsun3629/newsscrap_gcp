@@ -1,41 +1,68 @@
-# 프로젝트 설정 (YOUR_PROJECT_ID를 실제 프로젝트 ID로 변경)
-gcloud config set project newsscrap-456408
+#!/bin/bash
+set -e
 
-# 필요한 API 활성화
+# 1. 프로젝트 설정 및 API 활성화
+PROJECT_ID="newsscrap-456408"
+gcloud config set project ${PROJECT_ID}
+
+echo "프로젝트 ${PROJECT_ID} 설정 완료"
+
 gcloud services enable run.googleapis.com
 gcloud services enable cloudbuild.googleapis.com
 gcloud services enable cloudscheduler.googleapis.com
 
-# 현재 디렉토리에서 Cloud Run으로 배포
+echo "필요 API 활성화 완료"
+
+# 2. Cloud Run에 애플리케이션 배포 (Secrets 업데이트 포함)
 gcloud run deploy news-crawler \
-  --image gcr.io/newsscrap-456408/news-crawler:latest \
+  --image gcr.io/${PROJECT_ID}/news-crawler:latest \
   --platform managed \
   --region asia-northeast3 \
-  --update-secrets=OPENAI_API_KEY=projects/newsscrap-456408/secrets/OPENAI_API_KEY:latest,NOTION_TOKEN=projects/newsscrap-456408/secrets/NOTION_TOKEN:latest,FIRECRAWL_API_KEY=projects/newsscrap-456408/secrets/FIRECRAWL_API_KEY:latest \
-  --allow-unauthenticated
+  --update-secrets=OPENAI_API_KEY=projects/${PROJECT_ID}/secrets/OPENAI_API_KEY:latest,NOTION_TOKEN=projects/${PROJECT_ID}/secrets/NOTION_TOKEN:latest,FIRECRAWL_API_KEY=projects/${PROJECT_ID}/secrets/FIRECRAWL_API_KEY:latest \
+  --allow-unauthenticated \
+  --timeout=300s
 
-gcloud run services describe news-crawler --region asia-northeast3 --format="value(status.url)"
+# 배포 완료 후 Cloud Run URL 확인 (출력된 URL을 복사)
+CLOUD_RUN_URL=$(gcloud run services describe news-crawler --region asia-northeast3 --format="value(status.url)")
+echo "Cloud Run 서비스 URL: ${CLOUD_RUN_URL}"
 
-# 서비스 계정 생성 부분은 제거 (이미 제공된 계정을 사용)
-# 대신, 이 제공된 서비스 계정에 Cloud Run 호출 권한을 부여합니다.
+# 3. Cloud Run 서비스에 invoker 권한 부여 (제공된 서비스 계정 사용)
+SERVICE_ACCOUNT="753507636298-compute@developer.gserviceaccount.com"
 gcloud run services add-iam-policy-binding news-crawler \
-  --member=serviceAccount:753507636298-compute@developer.gserviceaccount.com \
+  --member="serviceAccount:${SERVICE_ACCOUNT}" \
   --role=roles/run.invoker \
-  --region=asia-northeast3
+  --region asia-northeast3
 
-# Cloud Scheduler 작업 생성 (매일 오전 7시 실행)
+echo "Cloud Run Invoker 권한 부여 완료"
+
+# 4. Secret Manager에 등록된 Secret에 대해 서비스 계정에 Secret Accessor 권한 부여
+gcloud secrets add-iam-policy-binding OPENAI_API_KEY \
+  --member="serviceAccount:${SERVICE_ACCOUNT}" \
+  --role="roles/secretmanager.secretAccessor"
+
+gcloud secrets add-iam-policy-binding NOTION_TOKEN \
+  --member="serviceAccount:${SERVICE_ACCOUNT}" \
+  --role="roles/secretmanager.secretAccessor"
+
+gcloud secrets add-iam-policy-binding FIRECRAWL_API_KEY \
+  --member="serviceAccount:${SERVICE_ACCOUNT}" \
+  --role="roles/secretmanager.secretAccessor"
+
+echo "Secret Manager 권한 부여 완료"
+
+# 5. Cloud Scheduler 작업 생성 (매일 오전 7시 실행)
 gcloud scheduler jobs create http daily-news-crawl \
-  --schedule="0 8* * *" \
-  --uri="https://newsscrap-753507636298.asia-northeast3.run.app" \
+  --schedule="0 8 * * *" \
+  --uri="${CLOUD_RUN_URL}" \
   --http-method=GET \
-  --oidc-service-account-email=753507636298-compute@developer.gserviceaccount.com \
-  --oidc-token-audience="https://newsscrap-753507636298.asia-northeast3.run.app"
+  --oidc-service-account-email="${SERVICE_ACCOUNT}" \
+  --oidc-token-audience="${CLOUD_RUN_URL}"
 
-# Scheduler 작업 확인
+echo "Cloud Scheduler 작업 생성 완료"
 gcloud scheduler jobs describe daily-news-crawl
 
-# 수동으로 작업 실행 테스트
-gcloud scheduler jobs run daily-news-crawl
+# 6. 수동 실행 테스트 (원하는 경우)
+# gcloud scheduler jobs run daily-news-crawl
 
-# 로그 확인
+echo "배포 및 스케줄링 작업 완료. Cloud Run 로그를 확인하세요:"
 gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=news-crawler" --limit 20
